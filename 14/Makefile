@@ -1,55 +1,42 @@
+# Compiler and flags
 CC = gcc
-CFLAGS = -Wall -Wextra -pedantic -ansi -g
-LDFLAGS =
+CFLAGS = -Wall -ansi -pedantic -g # -g for debugging symbols
 
-# Source and object directories
-SRC_DIR = src
-OBJ_DIR = obj
-INC_DIR = include
-BIN_DIR = bin
+# Directories
+SRCDIR = src
+INCDIR = include
+BUILDDIR = build
+OBJDIR = $(BUILDDIR)/obj
 
-# Source files (explicitly list needed files to control compilation order)
-SRCS = $(SRC_DIR)/main.c \
-       $(SRC_DIR)/assembler.c \
-       $(SRC_DIR)/preprocessor.c \
-       $(SRC_DIR)/first_pass.c \
-       $(SRC_DIR)/second_pass.c \
-       $(SRC_DIR)/symbol_table.c \
-       $(SRC_DIR)/instruction.c \
-       $(SRC_DIR)/directive.c \
-       $(SRC_DIR)/error_handler.c \
-       $(SRC_DIR)/file_handler.c \
-       $(SRC_DIR)/utils.c
+# Source files and object files
+# Automatically finds all .c files in src/
+SOURCES = $(wildcard $(SRCDIR)/*.c)
+OBJECTS = $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(SOURCES))
 
-OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRCS))
-
-# Header files
-HEADERS = $(wildcard $(INC_DIR)/*.h)
-
-# Target executable
-TARGET = $(BIN_DIR)/assembler
+# Executable name
+TARGET = $(BUILDDIR)/assembler
 
 # Default target
-all: directories $(TARGET)
+all: $(TARGET)
 
-# Create directories if they don't exist
-directories:
-	@mkdir -p $(OBJ_DIR) $(BIN_DIR)
+# Link the executable
+$(TARGET): $(OBJECTS)
+	@mkdir -p $(BUILDDIR)
+	$(CC) $(CFLAGS) $^ -o $@
+	@echo "Executable created: $@"
 
-# Linking the target executable
-$(TARGET): $(OBJS)
-	$(CC) $(LDFLAGS) $^ -o $@
+# Compile source files into object files
+# Depends on the .c file and any .h file in include/
+$(OBJDIR)/%.o: $(SRCDIR)/%.c $(wildcard $(INCDIR)/*.h)
+	@mkdir -p $(OBJDIR)
+	$(CC) $(CFLAGS) -I$(INCDIR) -c $< -o $@
 
-# Compiling source files with header dependencies
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS)
-	$(CC) $(CFLAGS) -I$(INC_DIR) -c $< -o $@
-
-# Clean up
+# Clean build artifacts
 clean:
-	rm -rf $(OBJ_DIR) $(BIN_DIR)
+	@echo "Cleaning build directory..."
+	rm -rf $(BUILDDIR) *.am # Also remove intermediate .am files
 
-# Test assembly of example files
-test: all
-	$(TARGET) example1
+# Phony targets
+.PHONY: all clean
 
-.PHONY: all clean test directories
+
