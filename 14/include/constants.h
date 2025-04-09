@@ -9,10 +9,10 @@
 #define MAX_MEMORY_WORDS 4096    /* Arbitrary max memory size - adjust as needed */
 #define WORD_SIZE 24             /* Machine word size in bits */
 
-/* ARE Types */
-#define ARE_ABSOLUTE 0b100 /* 4 */
-#define ARE_RELOCATABLE 0b010 /* 2 */
-#define ARE_EXTERNAL 0b001 /* 1 */
+/* ARE Types (Using standard integers for ANSI C) */
+#define ARE_ABSOLUTE 4      /* 0b100 */
+#define ARE_RELOCATABLE 2   /* 0b010 */
+#define ARE_EXTERNAL 1      /* 0b001 */
 
 /* Boolean TRUE/FALSE */
 #ifndef TRUE
@@ -22,7 +22,7 @@
 #define FALSE 0
 #endif
 
-/* --- Added Enums --- */
+/* --- Enums --- */
 
 /** Defines the type of a parsed line */
 typedef enum {
@@ -31,7 +31,7 @@ typedef enum {
     LINE_DIRECTIVE,
     LINE_INSTRUCTION,
     LINE_ERROR,
-    LINE_UNKNOWN /* Should not happen in final version */
+    LINE_UNKNOWN
 } LineType;
 
 /** Defines the type of directive */
@@ -40,7 +40,7 @@ typedef enum {
     DIR_STRING,
     DIR_ENTRY,
     DIR_EXTERN,
-    DIR_UNKNOWN /* For error cases */
+    DIR_UNKNOWN
 } DirectiveType;
 
 /** Defines the assembly instruction opcodes */
@@ -49,24 +49,23 @@ typedef enum {
     OP_CLR, OP_NOT, OP_INC, OP_DEC, OP_JMP,
     OP_BNE, OP_JSR, OP_RED, OP_PRN, OP_RTS,
     OP_STOP,
-    OP_UNKNOWN /* For error cases or non-instructions */
+    OP_UNKNOWN
 } Opcode;
 
 /** Defines the operand addressing modes */
 typedef enum {
-    ADDR_IMMEDIATE = 0, /* #value */
-    ADDR_DIRECT = 1,    /* label */
-    ADDR_RELATIVE = 2,  /* &label */
-    ADDR_REGISTER = 3,  /* rN */
-    ADDR_INVALID,       /* Parsing error */
-    ADDR_NONE           /* No operand */
+    ADDR_IMMEDIATE = 0,
+    ADDR_DIRECT = 1,
+    ADDR_RELATIVE = 2,
+    ADDR_REGISTER = 3,
+    ADDR_INVALID,
+    ADDR_NONE
 } AddressingMode;
 
-/* --- End Added Enums --- */
+/* --- End Enums --- */
 
 
-/* --- Reserved Words --- */
-/* Opcodes */
+/* --- Reserved Words (String constants) --- */
 #define OPCODE_MOV_STR "mov"
 #define OPCODE_CMP_STR "cmp"
 #define OPCODE_ADD_STR "add"
@@ -84,17 +83,13 @@ typedef enum {
 #define OPCODE_RTS_STR "rts"
 #define OPCODE_STP_STR "stop"
 
-/* Directives */
 #define DIRECTIVE_DATA_STR ".data"
 #define DIRECTIVE_STRING_STR ".string"
 #define DIRECTIVE_ENTRY_STR ".entry"
 #define DIRECTIVE_EXTERN_STR ".extern"
-/* --- Added Macro Directive Strings --- */
 #define DIRECTIVE_MCRO_STR "mcro"
 #define DIRECTIVE_MCROEND_STR "mcroend"
-/* --- End Added Macro Directive Strings --- */
 
-/* Registers */
 #define REGISTER_R0_STR "r0"
 #define REGISTER_R1_STR "r1"
 #define REGISTER_R2_STR "r2"
@@ -104,14 +99,12 @@ typedef enum {
 #define REGISTER_R6_STR "r6"
 #define REGISTER_R7_STR "r7"
 
-/* Array of all reserved words for easy checking (e.g., label/macro name validation) */
+/* Array of all reserved words for validation */
 extern const char *RESERVED_WORDS[];
 extern const int RESERVED_WORDS_COUNT;
 
 /* --- End Reserved Words --- */
 
-
-/* Add other constants as needed */
-
 #endif /* CONSTANTS_H */
+
 

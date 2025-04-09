@@ -11,14 +11,40 @@
 #include "../include/data_structures.h"
 
 /**
- * @brief Main entry point for the assembler.
+ * @brief Main entry point for the assembler program.
+ * Parses command line arguments, orchestrates the assembly passes (pre-assembler,
+ * first pass, second pass), and generates output files.
+ * @param argc Argument count.
+ * @param argv Argument vector. Expects source filenames (relative or absolute).
+ * If extension is not .as, it will be appended.
+ * @return EXIT_SUCCESS on successful assembly of all files, EXIT_FAILURE otherwise.
  */
 int main(int argc, char *argv[]) {
+    /* --- Variable Declarations (C90) --- */
     int i;
     int overall_success = TRUE;
     const char *as_ext = ".as";
     const char *am_ext = ".am";
     size_t as_ext_len = strlen(as_ext);
+    /* Use FILENAME_MAX for safer buffer sizing */
+    char input_filename[FILENAME_MAX];
+    char am_filename[FILENAME_MAX];
+    char base_name[FILENAME_MAX];
+    char output_base_name[FILENAME_MAX];
+    char *last_slash = NULL;
+    char *dot_pos = NULL;
+    int pre_assembler_ok;
+    int first_pass_ok;
+    int second_pass_ok;
+    int output_ok;
+    size_t arg_len; /* Use size_t for strlen result */
+    SymbolNode *symbol_table = NULL;
+    int icf = 0;
+    int dcf = 0;
+    MachineWordNode *code_image = NULL;
+    MachineWordNode *data_image = NULL;
+    ExternUsageNode *extern_list = NULL;
+    /* --- End Variable Declarations --- */
 
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <file1[.as]> [file2[.as]] ...\n", argv[0]);
@@ -29,44 +55,59 @@ int main(int argc, char *argv[]) {
     printf("--- Assembler Started ---\n");
 
     for (i = 1; i < argc; ++i) {
-        char input_filename[MAX_LINE_LENGTH * 2];
-        char am_filename[MAX_LINE_LENGTH * 2];
-        char base_name[MAX_LINE_LENGTH];
-        char output_base_name[MAX_LINE_LENGTH * 2]; /* For path + base name */
-        char *last_slash = NULL;
-        char *dot_pos = NULL;
-        int pre_assembler_ok;
-        int first_pass_ok;
-        int second_pass_ok;
-        int output_ok; /* Added flag */
-        size_t arg_len = strlen(argv[i]);
-        SymbolNode *symbol_table = NULL;
-        int icf = 0;
-        int dcf = 0;
-        MachineWordNode *code_image = NULL;
-        MachineWordNode *data_image = NULL;
-        ExternUsageNode *extern_list = NULL;
+        arg_len = strlen(argv[i]); /* Get length for current arg */
 
         printf("\nProcessing file argument: %s\n", argv[i]);
 
-        /* --- Construct filenames --- */
+        /* --- Construct input filename (.as) --- */
         if (arg_len > as_ext_len && strcmp(argv[i] + arg_len - as_ext_len, as_ext) == 0) {
-            strncpy(input_filename, argv[i], sizeof(input_filename) - 1);
+            /* Argument already has .as extension - copy carefully */
+             if (arg_len >= FILENAME_MAX) {
+                 fprintf(stderr, "Error: Input filename too long: %s\n", argv[i]);
+                 overall_success = FALSE; continue;
+             }
+            strcpy(input_filename, argv[i]); /* Use strcpy */
         } else {
-            snprintf(input_filename, sizeof(input_filename), "%s%s", argv[i], as_ext);
+            /* Append .as extension using sprintf */
+             if (arg_len + as_ext_len >= FILENAME_MAX) {
+                 fprintf(stderr, "Error: Input filename too long after adding .as: %s\n", argv[i]);
+                 overall_success = FALSE; continue;
+             }
+            sprintf(input_filename, "%s%s", argv[i], as_ext); /* Use sprintf */
         }
-        input_filename[sizeof(input_filename) - 1] = '\0';
 
+        /* --- Construct intermediate/output base filename --- */
         last_slash = strrchr(argv[i], '/');
-        if (last_slash) { strncpy(base_name, last_slash + 1, sizeof(base_name) - 1); }
-        else { strncpy(base_name, argv[i], sizeof(base_name) - 1); }
-        base_name[sizeof(base_name) - 1] = '\0';
+        if (last_slash) {
+             if (strlen(last_slash + 1) >= FILENAME_MAX) {
+                 fprintf(stderr, "Error: Base filename too long: %s\n", last_slash + 1);
+                 overall_success = FALSE; continue;
+             }
+            strcpy(base_name, last_slash + 1);
+        } else {
+             if (arg_len >= FILENAME_MAX) {
+                 fprintf(stderr, "Error: Base filename too long: %s\n", argv[i]);
+                 overall_success = FALSE; continue;
+             }
+            strcpy(base_name, argv[i]);
+        }
         dot_pos = strrchr(base_name, '.');
-        if (dot_pos && strcmp(dot_pos, as_ext) == 0) { *dot_pos = '\0'; }
-        snprintf(am_filename, sizeof(am_filename), "build/%s%s", base_name, am_ext);
-        /* Base name for output files (without path initially) */
-        strncpy(output_base_name, base_name, sizeof(output_base_name) -1);
-        output_base_name[sizeof(output_base_name) - 1] = '\0';
+        if (dot_pos && strcmp(dot_pos, as_ext) == 0) {
+            *dot_pos = '\0';
+        }
+        /* Use base_name for output file base */
+        if (strlen(base_name) >= FILENAME_MAX) {
+             fprintf(stderr, "Error: Base filename for output too long: %s\n", base_name);
+             overall_success = FALSE; continue;
+        }
+        strcpy(output_base_name, base_name);
+
+        /* Create .am filename in build directory */
+         if (strlen(base_name) + strlen(am_ext) + strlen("build/") >= FILENAME_MAX) {
+             fprintf(stderr, "Error: Intermediate filename path too long for: %s\n", base_name);
+             overall_success = FALSE; continue;
+         }
+        sprintf(am_filename, "build/%s%s", base_name, am_ext); /* Use sprintf */
 
 
         /* --- Stage 1: Pre-Assembler --- */
@@ -105,7 +146,6 @@ int main(int argc, char *argv[]) {
         if (!output_ok) {
              fprintf(stderr, "Failed to generate output files for %s.\n", output_base_name);
              overall_success = FALSE;
-             /* Still need to cleanup lists even if output failed */
         }
 
         printf("Successfully processed argument: %s\n", argv[i]);
