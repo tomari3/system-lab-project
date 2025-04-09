@@ -1,0 +1,50 @@
+;-------------------------
+; Assembly example program
+;-------------------------
+
+; Define macros
+
+
+; Define external symbols
+.extern EXTERN_FUNC
+
+; Define data section
+DATA_SEC: .data 100, -5, 3
+STRING_SEC: .string "Hello, World!"
+
+; Main program
+    mov #5, r1      ; Load immediate value 5 into r1
+inc r1
+    
+LOOP:
+    cmp r1, #10     ; Compare r1 with 10
+    bne CONTINUE    ; Branch if not equal
+    
+    mov STRING_SEC, r3  ; Move address of string to r3
+    jsr PRINT_STR       ; Jump to subroutine
+    
+    jmp END         ; Jump to end
+
+CONTINUE:
+inc r1
+mov r1, r2
+    jmp &LOOP       ; Jump back to loop with relative addressing
+
+PRINT_STR:
+    mov #0, r4      ; Initialize counter
+PRINT_LOOP:
+    prn r3          ; Print character
+    inc r3          ; Move to next character
+    inc r4          ; Increment counter
+    cmp r4, #13     ; Check if we've printed all characters
+    bne PRINT_LOOP  ; Continue if not done
+    rts             ; Return from subroutine
+
+; Define entry points
+.entry PRINT_STR
+
+; Call external function
+    jsr EXTERN_FUNC
+
+END:
+    stop            ; End program
