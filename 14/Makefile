@@ -34,7 +34,8 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c $(wildcard $(INCDIR)/*.h)
 # Clean build artifacts
 clean:
 	@echo "Cleaning build directory..."
-	rm -rf $(BUILDDIR) *.am # Also remove intermediate .am files
+	# Remove *.am from current dir and build dir object files/executable
+	rm -rf $(BUILDDIR) *.am
 
 # Phony targets
 .PHONY: all clean
